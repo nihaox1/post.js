@@ -1,7 +1,14 @@
 $g.post.url( {
 	"core/core.php"		: function( post ){
 		if( post.action == "user" ){
-
+			return {
+				"user|2-5" 	: "cccc",
+				"email"		: "xxxxxxx@dsa.com"
+			};
+		} else if( post.action == "reg" ){
+			return "js/json/reg.js";
+		} else {
+			return { error : 9 };
 		};
 	},
 	"core/core1.php" 	: {

@@ -26,17 +26,26 @@ $g.post.error( function( rtn ){
 	};
 } );
 
-$g.post( "core/core1.php" , { name : "xxxxxxx" } , function( rtn ){
-	E( rtn );
-} );
+// $g.post( "core/core1.php" , { name : "xxxxxxx" } , function( rtn ){
+// 	E( rtn );
+// } );
 
 $g.post( { action : "user" } , function( rtn ){
 	E( rtn );
 } );
 
-$g.post( "core/core2.php" , { action : "user" } , function( rtn ){
+$g.post( { action : "reg" } , function( rtn ){
 	E( rtn );
 } );
+
+$g.post( { action : "reg" } , function( rtn ){
+	E( rtn );
+	E( "reg" );
+} );
+
+// $g.post( "core/core2.php" , { action : "user" } , function( rtn ){
+// 	E( rtn );
+// } );
 
 </script>
 </html>

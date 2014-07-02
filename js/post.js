@@ -4,7 +4,8 @@ $c.extend( {
 			config,
 			tool,
 			manage,
-			Ajax;
+			Ajax,
+			Jurls;
 
 		Ajax = function( self , url , data , callback , options ){
 			var _opt = {
@@ -41,6 +42,47 @@ $c.extend( {
 			};
 		};
 
+		Jurl = function( url ){
+			var _self = this;
+			this.config = {
+				url 	: url,
+				wait	: true,
+				items 	: [],
+				value 	: 0
+			};
+			$c.modal.require( {
+				url 	: url
+			} );
+		};
+
+		Jurl.fn = Jurl.prototype;
+
+		Jurl.fn.config = function(){
+			return this.config;
+		};
+		/*!
+		 *	负责接收本地针对分发url的 ajax请求
+		 *	@opts 	{object}	接收的ajax请求数据
+		 */
+		Jurl.fn.send = function( opts ){
+			if( this.config.wait ){
+				this.config.items.push( opts );
+			} else {
+				tool.debug_ajax( opts );
+			};
+		};
+
+		/*!
+		 *	对应url的返回值
+		 */
+		Jurl.fn.set = function( args ){
+			this.config.wait 	= false;
+			this.config.value 	= args;
+			for( var i = 0 , len = this.config.items.length; i < len; i++ ){
+				this.send( this.config.items[ i ] );
+			};
+		};
+
 		Post = function( config , args ){
 			var _self 	= this,
 				_rtn 	= function( url , data , callback , options ){
@@ -50,8 +92,8 @@ $c.extend( {
 			_rtn.error 	= function( errors ){
 				_self.error( errors );
 			};
-			_rtn.url 	= function( args ){
-				_self.set_url( args );
+			_rtn.url 	= function( url , args ){
+				_self.set_url( url , args );
 			};
 			return _rtn;
 		};
@@ -80,12 +122,19 @@ $c.extend( {
 			return this.send;
 		};
 
-		Post.fn.set_url = function( args ){
-			E( args );
-			this.Jurls = args;
+		Post.fn.set_url = function( url , args ){
+			if( !url ){
+				return this.send;
+			} else if( !args ){
+				this.orgin_jurl = url;
+				this.jurl = $c.tool.rtn( url );
+			} else if( args ){
+				config.jurls[ url ].set( args );
+			};
 		};
 
 		Post.fn.ajaxs = [];
+
 		tool = {
 			/*!
 			 *	debug模式下
@@ -124,20 +173,46 @@ $c.extend( {
 				return _rtn;
 			},
 			/*!
-			 *	发现为debug模式时  将直接采用本地请求
+			 * 	debug模式下 同时请求地址为一个分发地址时
+			 *	将先序列化 地址内容到本地，并配置一个队列来处理
+			 *	@url 	{string}	请求内容地址
 			 *	@opts 	{object}	请求提交的ajax数据
 			 */
+			seq_jurls : function( url , opts ){
+				var _url = opts.url;
+				if( !config.jurls[ _url ] ){
+					config.jurls[ _url ] = new Jurl( url );
+				};
+				config.jurls[ _url ].send( opts );
+				return config.jurls[ _url ];
+			},
+			/*!
+			 *	debug模式时  将直接采用本地请求
+			 *	@opts 	{object}	请求提交的ajax数据
+			 *	@Post 	{Post} 		当前指向的Post实例
+			 */
 			debug_ajax : function( opts ){
-				E( arguments );
-				var _val;
-				if( !( _val = this.Jurls[ opts.url ] ) ){
+				var _val,
+					_self = opts.__post ? opts.__post : this,
+					_x;
+				if( !( _val = _self.jurl[ opts.url ] ) ){
 					return E( "Post url not exsist." );
+				} else if( _self.jurl[ opts.url ] instanceof Jurl ){
+					_val = _self.jurl[ opts.url ].config.value;
 				};
-				if( typeof _val == "object" ){
-					opts.success( tool.get_rtn_val( _val ) );
-				} else {
-					return E( "Error return value." );
+				_x = function( val ){
+					if( typeof val == "object" ){
+						opts.success( tool.get_rtn_val( val ) );
+					} else if( typeof val == "string" ){
+						opts.__post = _self;
+						_self.jurl[ opts.url ] = tool.seq_jurls( val , opts );
+					} else if( typeof val == "function" ){
+						_x( val( opts.data ) );
+					} else {
+						return E( "Error return value." );
+					};
 				};
+				_x( _val );
 			},
 			/*!
 			 *	发送ajax的参数预处理
@@ -162,6 +237,8 @@ $c.extend( {
 			/*!
 			 *	设置Post实例的通配配置
 			 *	并处理当其debug为true时 需求的url转向文件
+			 *	@conf 	{object} 	个性化配置
+			 *	@opts 	{object} 	在个性化配置中 配置了项后的请求地址
 			 */
 			set_config : function( conf , opts ){
 				var _self = this;
@@ -188,7 +265,8 @@ $c.extend( {
 				config = {
 					url 		: 0,
 					errors 		: [],
-					timeout 	: 20000
+					timeout 	: 20000,
+					jurls 		: {}
 				};
 			}
 		};
