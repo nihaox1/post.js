@@ -16,51 +16,38 @@ var $g = {
 		debug 		: true
 	} , {
 		url 		: "js/postxml.js"
+	} ),
+	get 	: $c.post.create( {
+		url 		: "core/core.php",
+		debug 		: true
+	} , {
+		url 		: "js/getxml.js"
 	} )
 };
 
-$g.post.error( function( rtn ){
+$g.get.error( function( rtn ){
 	if( rtn.error == 9 ){
 		E( "Session not exsist!" );
 		return false;
 	};
 } );
 
-$g.post( "core/core1.php" , { name : "xxxxxxx" } , function( rtn ){
-	E( 1 );
-	E( rtn );
-	E( "" );
-} );
-
-$g.post( { action : "user" } , function( rtn ){
+$g.get( { action : "user" } , function( rtn ){
 	E( 2 );
 	E( rtn );
 	E( "" );
 } );
 
-$g.post( { action : "reg" } , function( rtn ){
+$g.get( { action : "reg" } , function( rtn ){
 	E( 3 );
 	E( rtn );
 	E( "" );
 } );
 
-$g.post( { action : "user" } , function( rtn ){
-	E( 4 );
+$g.get( { action : "xxxx" } , function( rtn ){
+	E( 1 );
 	E( rtn );
 	E( "" );
 } );
-
-$g.post( { action : "reg" } , function( rtn ){
-	E( 5 );
-	E( rtn );
-	E( "" );
-} );
-
-$g.post( "core/core2.php" , { action : "user" } , function( rtn ){
-	E( 6 );
-	E( rtn );
-	E( "" );
-} );
-
 </script>
 </html>

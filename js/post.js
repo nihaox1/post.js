@@ -88,6 +88,8 @@ $c.extend( {
 				_rtn 	= function( url , data , callback , options ){
 					_self.send( url , data , callback , options );
 				};
+			_self.ajaxs 		= [];
+			_self.orgin_jurl 	= {};
 			this.config = tool.set_config.call( _self , config , args );
 			_rtn.error 	= function( errors ){
 				_self.error( errors );
@@ -95,6 +97,7 @@ $c.extend( {
 			_rtn.url 	= function( url , args ){
 				_self.set_url( url , args );
 			};
+			_rtn.__orgin 	= this;
 			return _rtn;
 		};
 
@@ -133,10 +136,7 @@ $c.extend( {
 			};
 		};
 
-		Post.fn.ajaxs 		= [];
-
-		Post.fn.orgin_jurl 	= {};
-		Post.fn.jurls 		= {};
+		Post.fn.jurls = {};
 
 		tool = {
 			/*!
@@ -223,17 +223,18 @@ $c.extend( {
 			 *	this 将被指向到Post实例
 			 */
 			ajax : function( url , data , callback , opts ){
-				if( typeof url == "object" ){
+				var _type = typeof url;
+				if( _type == "object" ){
 					opts 		= callback 	|| {};
 					callback 	= data 		|| false;
 					data 		= url;
 					url 		= false;
-				} else if( typeof url == "function" ){
+				} else if( _type == "function" ){
 					opts 		= data;
 					callback 	= url;
 					data 		= {};
 					url 		= false;
-				} else if( typeof url != "string" ){
+				} else if( _type != "string" ){
 					return this.send;
 				};
 				new Ajax( this , url , data , callback , opts );
@@ -248,6 +249,7 @@ $c.extend( {
 				var _self = this;
 				conf 	= $c.tool.rtn( config , conf );
 				if( conf.debug && opts ){
+					_self.__opts = opts;
 					if( typeof opts.url == "string" ){
 						conf.wait = true;
 						$c.modal.require( { 
