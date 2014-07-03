@@ -1,4 +1,4 @@
-$g.post.url( "core/core2.php" , {
+$g.post.url( "js/json/core.js" , {
 	"name|1-10" 	: "xxxxx",
 	"age|10-80" 	: 10,
 	"friends|0-20"	: {

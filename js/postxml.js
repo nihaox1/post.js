@@ -7,6 +7,8 @@ $g.post.url( {
 			};
 		} else if( post.action == "reg" ){
 			return "js/json/reg.js";
+		} else if( post.action == "login" ){
+			return "js/json/login.js";
 		} else {
 			return { error : 9 };
 		};

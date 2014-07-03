@@ -36,7 +36,7 @@ $c.extend( {
 				};
 			_opt = $c.tool.rtn( _opt , options || {} );
 			if( self.config.debug ){
-				tool.debug_ajax.call( self , _opt );
+				tool.debug_ajax.call( self , _opt , _opt.url );
 			} else {
 				$.ajax( _opt );
 			};
@@ -68,7 +68,7 @@ $c.extend( {
 			if( this.config.wait ){
 				this.config.items.push( opts );
 			} else {
-				tool.debug_ajax( opts );
+				tool.debug_ajax( opts , this.config.url );
 			};
 		};
 
@@ -129,11 +129,14 @@ $c.extend( {
 				this.orgin_jurl = url;
 				this.jurl = $c.tool.rtn( url );
 			} else if( args ){
-				config.jurls[ url ].set( args );
+				this.jurls[ url ].set( args );
 			};
 		};
 
-		Post.fn.ajaxs = [];
+		Post.fn.ajaxs 		= [];
+
+		Post.fn.orgin_jurl 	= {};
+		Post.fn.jurls 		= {};
 
 		tool = {
 			/*!
@@ -172,67 +175,68 @@ $c.extend( {
 				};
 				return _rtn;
 			},
-			/*!
-			 * 	debug模式下 同时请求地址为一个分发地址时
-			 *	将先序列化 地址内容到本地，并配置一个队列来处理
-			 *	@url 	{string}	请求内容地址
-			 *	@opts 	{object}	请求提交的ajax数据
+			/*! 
+			 *	根据不同的返回值 来做分发
+			 *	这个可能是一个复杂的迭代
+			 *	@val 	{object|func|string|array} 
+			 *	@opts 	{object} 	请求提交的ajax数据
+			 * 	@this	{Post} 		Post实例
 			 */
-			seq_jurls : function( url , opts ){
-				var _url = opts.url;
-				if( !config.jurls[ _url ] ){
-					config.jurls[ _url ] = new Jurl( url );
+			handle_from_value : function( val , opts ){
+				if( typeof val == "object" ){
+					window.setTimeout( function(){
+						opts.success( tool.get_rtn_val( val ) );
+					} , Math.ceil( Math.random() * 10 ) * 100 );
+				} else if( typeof val == "string" ){
+					opts.__post = this;
+					if( !this.jurls[ val ] ){
+						this.jurls[ val ] = new Jurl( val );
+					};
+					this.jurls[ val ].send( opts );
+				} else if( typeof val == "function" ){
+					tool.handle_from_value.call( this , val( opts.data ) , opts );
+				} else {
+					return E( "Error return value." );
 				};
-				config.jurls[ _url ].send( opts );
-				return config.jurls[ _url ];
 			},
 			/*!
 			 *	debug模式时  将直接采用本地请求
 			 *	@opts 	{object}	请求提交的ajax数据
-			 *	@Post 	{Post} 		当前指向的Post实例
+			 *	@url 	{string} 	当前指向的Post实例
 			 */
-			debug_ajax : function( opts ){
+			debug_ajax : function( opts , url ){
 				var _val,
 					_self = opts.__post ? opts.__post : this,
 					_x;
-				if( !( _val = _self.jurl[ opts.url ] ) ){
-					return E( "Post url not exsist." );
-				} else if( _self.jurl[ opts.url ] instanceof Jurl ){
-					_val = _self.jurl[ opts.url ].config.value;
-				};
-				_x = function( val ){
-					if( typeof val == "object" ){
-						opts.success( tool.get_rtn_val( val ) );
-					} else if( typeof val == "string" ){
+				if( !( _val = _self.orgin_jurl[ opts.url ] ) ){
+					return E( opts.url + " Post url not exsist." );
+				} else if( _self.jurls[ url ] instanceof Jurl ){
+					if( !( _val = _self.jurls[ url ].config.value ) ){
 						opts.__post = _self;
-						_self.jurl[ opts.url ] = tool.seq_jurls( val , opts );
-					} else if( typeof val == "function" ){
-						_x( val( opts.data ) );
-					} else {
-						return E( "Error return value." );
+						return _self.jurls[ url ].send( opts );
 					};
 				};
-				_x( _val );
+				tool.handle_from_value.call( _self , _val , opts );
 			},
 			/*!
 			 *	发送ajax的参数预处理
 			 *	this 将被指向到Post实例
 			 */
-			ajax : function( url , data , callback , options ){
+			ajax : function( url , data , callback , opts ){
 				if( typeof url == "object" ){
-					options 	= callback 	|| {};
+					opts 		= callback 	|| {};
 					callback 	= data 		|| false;
 					data 		= url;
 					url 		= false;
 				} else if( typeof url == "function" ){
-					options 	= data;
+					opts 		= data;
 					callback 	= url;
 					data 		= {};
 					url 		= false;
 				} else if( typeof url != "string" ){
 					return this.send;
 				};
-				new Ajax( this , url , data , callback , options );
+				new Ajax( this , url , data , callback , opts );
 			},
 			/*!
 			 *	设置Post实例的通配配置
